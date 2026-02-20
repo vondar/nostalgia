@@ -16,7 +16,7 @@ Unlike Evidence, Streamlit is script-based. We will use a single main file with 
 
 ```text
 project/
-├── data/billboard.db
+├── billboard.db
 ├── dashboard.py         # Main entry point
 └── pages/               # Optional: Streamlit auto-detects multi-page apps here
     ├── 01_Artist_Deep_Dive.py
@@ -57,23 +57,30 @@ st.markdown("""
 # --- DATA LOADING (CACHED) ---
 @st.cache_data
 def get_dashboard_data():
-    conn = sqlite3.connect("data/billboard.db")
+    conn = sqlite3.connect("billboard.db")
     
     # 1. Main Song Registry
+    # Schema: song_id, norm_title, norm_artist, peak_rank, weeks_top_100, weeks_top_10, ...
     songs = pl.read_database("SELECT * FROM songs", conn)
     
     # 2. Market Share Logic (Top 10 Artists vs Other)
+    # We join with songs to use the normalized artist name, avoiding "feat." variations
     market_query = """
-    WITH top_artists AS (
-        SELECT artist FROM chart_entries 
-        GROUP BY artist ORDER BY COUNT(*) DESC LIMIT 10
+    WITH normalized_entries AS (
+        SELECT c.chart_date, s.norm_artist 
+        FROM chart_entries c
+        JOIN songs s ON c.song_id = s.song_id
+    ),
+    top_artists AS (
+        SELECT norm_artist FROM normalized_entries
+        GROUP BY norm_artist ORDER BY COUNT(*) DESC LIMIT 10
     )
     SELECT 
-        c.chart_date,
-        CASE WHEN t.artist IS NOT NULL THEN c.artist ELSE 'Other' END as artist_group,
+        n.chart_date,
+        CASE WHEN t.norm_artist IS NOT NULL THEN n.norm_artist ELSE 'Other' END as artist_group,
         COUNT(*) as slot_count
-    FROM chart_entries c
-    LEFT JOIN top_artists t ON c.artist = t.artist
+    FROM normalized_entries n
+    LEFT JOIN top_artists t ON n.norm_artist = t.norm_artist
     GROUP BY 1, 2
     """
     market_share = pl.read_database(market_query, conn)
@@ -109,8 +116,8 @@ fig_persistence = px.scatter(
     y="weeks_top_100",
     color="weeks_top_10",
     size="weeks_top_100",
-    hover_name="title",
-    hover_data=["artist", "peak_rank", "weeks_top_100"],
+    hover_name="norm_title",
+    hover_data=["norm_artist", "peak_rank", "weeks_top_100"],
     color_continuous_scale="Viridis",
     labels={"peak_rank": "Peak Rank (1 is best)", "weeks_top_100": "Total Weeks in Top 100"}
 )
@@ -152,10 +159,20 @@ with c2:
     st.subheader("The Top 10 Elite")
     top_10_table = (
         songs.sort("weeks_top_10", descending=True)
-        .select(["title", "artist", "weeks_top_10", "peak_rank"])
+        .select(["norm_title", "norm_artist", "weeks_top_10", "peak_rank"])
         .head(15)
     )
     st.table(top_10_table.to_pandas())
+
+# --- SIDEBAR SEARCH (The "Flex") ---
+st.sidebar.header("Search Archive")
+search_query = st.sidebar.text_input("Search for a Song or Artist")
+if search_query:
+    search_results = songs.filter(
+        pl.col("norm_title").str.to_lowercase().str.contains(search_query.lower()) | 
+        pl.col("norm_artist").str.to_lowercase().str.contains(search_query.lower())
+    )
+    st.sidebar.dataframe(search_results.select(["norm_title", "norm_artist", "peak_rank", "weeks_top_100"]))
 ```
 
 ---
@@ -169,15 +186,4 @@ with c2:
 2.  **Run the App:**
     ```bash
     streamlit run dashboard.py
-    ```
-3.  **The "Flex" - Adding a Search Bar:**
-    Since you have the `songs` DataFrame, you can add a simple sidebar search:
-    ```python
-    search_query = st.sidebar.text_input("Search for a Song or Artist")
-    if search_query:
-        search_results = songs.filter(
-            pl.col("title").str.contains(search_query.lower()) | 
-            pl.col("artist").str.contains(search_query.lower())
-        )
-        st.sidebar.dataframe(search_results.select(["title", "artist", "peak_rank"]))
     ```
