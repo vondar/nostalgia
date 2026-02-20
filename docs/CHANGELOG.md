@@ -8,10 +8,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
-- **Dashboard**: Initialized Evidence.dev project structure (`dashboard/`).
-- **Queries**: Added core analytical queries for dashboard (`persistence.sql`, `market_share.sql`, `survival.sql`).
-
-### Added
 - Initial project scaffolding based on `README.md` specifications.
 - `requirements.txt`: Added dependencies (`polars`, `requests`, `beautifulsoup4`, `unidecode`, `ytmusicapi`).
 - `common.py`:
