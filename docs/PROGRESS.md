@@ -19,6 +19,12 @@
 - [x] **Progress Tracking**: Maintained real-time status in `PROGRESS.md`.
 - [x] **Changelog**: Documented all architectural decisions and bug fixes.
 
+### 4. Dashboard & Visualization
+- [ ] **Scaffolding**: Initialize Evidence.dev project.
+- [ ] **Data Connection**: Connect `billboard.db`.
+- [ ] **Core Queries**: Implement persistence, market_share, survival, and creepers queries.
+- [ ] **Pages**: Create index, artist profile, and deep-dive pages.
+
 ---
 
 ## 🟡 In Progress / Next Steps
