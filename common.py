@@ -27,6 +27,8 @@ def init_db():
         conn.execute("""
             CREATE TABLE IF NOT EXISTS songs (
                 song_id TEXT PRIMARY KEY,
+                title TEXT, -- Display title
+                artist TEXT, -- Display artist
                 norm_title TEXT NOT NULL,
                 norm_artist TEXT NOT NULL,
                 variant_info TEXT, -- NEW: Store remix/feat info
@@ -51,6 +53,16 @@ def init_db():
             
         try:
             conn.execute("ALTER TABLE songs ADD COLUMN variant_info TEXT;")
+        except sqlite3.OperationalError:
+            pass
+
+        try:
+            conn.execute("ALTER TABLE songs ADD COLUMN title TEXT;")
+        except sqlite3.OperationalError:
+            pass
+
+        try:
+            conn.execute("ALTER TABLE songs ADD COLUMN artist TEXT;")
         except sqlite3.OperationalError:
             pass
 
@@ -134,6 +146,29 @@ def extract_variant_info(text: str) -> str:
         variants.extend(paren_matches)
         
     return " ".join(variants) if variants else None
+
+def get_song_metadata(song_id: str):
+    """
+    Retrieves metadata for a given song_id.
+    """
+    conn = get_db_connection()
+    row = conn.execute("SELECT * FROM songs WHERE song_id = ?", (song_id,)).fetchone()
+    conn.close()
+    return row
+
+def update_sync_status(song_id: str, status: str):
+    """
+    Updates the sync_status for a song.
+    Valid statuses: 'unsynced', 'dry_run_passed', 'synced', 'rejected'
+    """
+    valid_statuses = ['unsynced', 'dry_run_passed', 'synced', 'rejected']
+    if status not in valid_statuses:
+        raise ValueError(f"Invalid sync status: {status}. Must be one of {valid_statuses}")
+        
+    conn = get_db_connection()
+    with conn:
+        conn.execute("UPDATE songs SET sync_status = ? WHERE song_id = ?", (status, song_id))
+    conn.close()
 
 if __name__ == "__main__":
     init_db()

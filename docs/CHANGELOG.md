@@ -8,6 +8,26 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Dashboard**: Created `dashboard.py` (Streamlit/Plotly) for interactive data exploration. Features include:
+    - Bento Box layout for high-level KPIs.
+    - Longevity vs. Peak Rank scatter plot with "Gold Zone" highlighting.
+    - Sparkline visualizations for individual song chart histories.
+    - Artist market share visualization.
+- **Metadata**: Added `title` and `artist` columns to `songs` table to store human-readable display names (separate from normalized search keys).
+- **Metadata**: Added `sync_status`, `first_chart_date`, `last_chart_date`, and `weeks_top_10` to `songs` schema.
+
+### Changed
+- **Schema**: Updated `songs` table schema in `common.py` and `METADATA.md` to strictly define types and constraints.
+- **Scraper**: Updated `01_scrape.py` to capture and insert raw `title` and `artist` strings directly into the registry.
+- **Migration**: Ran `migrate_metadata.py` to backfill display titles/artists for all 2,136 existing songs using historical chart data.
+
+### Fixed
+- **Dashboard**: Resolved `ComputeError` in Polars by handling `None None` strings in `variant_info` and adding `schema_overrides`.
+- **Docs**: Aligned `METADATA.md` with the actual codebase state, fixing missing column definitions.
+
+## [Initial Release] - 2013-2017 Dataset
+
+### Added
 - Initial project scaffolding based on `README.md` specifications.
 - `requirements.txt`: Added dependencies (`polars`, `requests`, `beautifulsoup4`, `unidecode`, `ytmusicapi`).
 - `common.py`:

@@ -179,9 +179,9 @@ def scrape_chart(date_str):
                 # Ensure song exists in registry (minimal insert to satisfy FK)
                 # Full population happens in Phase 2
                 conn.execute("""
-                    INSERT OR IGNORE INTO songs (song_id, norm_title, norm_artist, variant_info)
-                    VALUES (?, ?, ?, ?)
-                """, (song_id, norm_title, norm_artist, variant_info))
+                    INSERT OR IGNORE INTO songs (song_id, title, artist, norm_title, norm_artist, variant_info)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                """, (song_id, title, artist, norm_title, norm_artist, variant_info))
                 
                 conn.execute("""
                     INSERT INTO chart_entries (song_id, chart_date, rank, raw_title, raw_artist)

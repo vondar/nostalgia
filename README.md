@@ -18,6 +18,7 @@ A deterministic, resumable, and state-aware ETL pipeline. This system extracts 5
 | **Logic** | Python 3.11 / Polars | Vectorized data aggregation and history modeling. |
 | **Parsing** | BeautifulSoup 4 (Hierarchical) | DOM-drift resistant scraping with canary checks. |
 | **Matching** | Weighted Heuristics | Confidence-scored sync logic (Duration + Keyword + Title + Variant Info). |
+| **Visualization** | Streamlit + Plotly | Interactive dashboard with drill-down capabilities. |
 | **API** | `ytmusicapi` | Unofficial YouTube Music API with session management. |
 
 ---
@@ -26,14 +27,15 @@ A deterministic, resumable, and state-aware ETL pipeline. This system extracts 5
 
 ### 1. `songs` (The Identity Registry)
 - `song_id` (PK): `SHA256(norm_title + "|" + norm_artist)`
-- `norm_title`, `norm_artist`: Cleaned strings (No "feat.", lowercase, unidecode).
-- `variant_info`: Extracted remix/feature data (e.g., "Remix", "feat. X") used for search boosting.
+- `title`, `artist`: Display names (e.g. "Hotline Bling", "Drake").
+- `norm_title`, `norm_artist`: Cleaned strings for search/hashing.
+- `variant_info`: Extracted remix/feature data.
 - `first_chart_date`, `last_chart_date`: Era context.
 - `peak_rank`, `weeks_top_100`, `weeks_top_10`: Computed metrics.
 - `yt_video_id`: Found via dry-run.
 - `confidence_score`: 0.0 to 1.0 based on match quality.
 - `sync_status`: `unsynced`, `dry_run_passed`, `synced`, `rejected`.
-- **Constraint:** `UNIQUE(norm_title, norm_artist)`
+- **Constraint:** `UNIQUE(norm_title, norm_artist, variant_info)`
 
 ### 2. `chart_entries` (The Temporal Record)
 - `song_id` (FK), `chart_date`, `rank`.
@@ -95,9 +97,10 @@ A deterministic, resumable, and state-aware ETL pipeline. This system extracts 5
 
 1.  **Ingest**: `python 01_scrape.py` (Updates `chart_entries` & `scrape_log`)
 2.  **Refine**: `python 02_normalize.py` (Updates `songs` registry & `variant_info`)
-3.  **Analyze**: `python 03_aggregate.py` (Computes metrics)
-4.  **Verify**: `python 04_yt_verify.py` (Populates `confidence_score`)
-5.  **Deploy**: `python 05_yt_sync.py --live --min-confidence 0.90`
+3.98.  **Analyze**: `python 03_aggregate.py` (Computes metrics)
+99.  **Visualize**: `streamlit run dashboard.py` (Launch interactive dashboard)
+100. **Verify**: `python 04_yt_verify.py` (Populates `confidence_score`)
+101. **Deploy**: `python 05_yt_sync.py --live --min-confidence 0.90`
 
 ---
 

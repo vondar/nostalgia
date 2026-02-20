@@ -66,11 +66,15 @@ def get_dashboard_data():
     songs = pl.read_database(
         "SELECT * FROM songs", 
         conn,
-        schema_overrides={"variant_info": pl.String, "confidence_score": pl.Float64}
+        schema_overrides={"variant_info": pl.String, "confidence_score": pl.Float64, "title": pl.String, "artist": pl.String}
     )
     
     # Ensure first_chart_date is date type
-    songs = songs.with_columns(pl.col("first_chart_date").str.to_date())
+    songs = songs.with_columns([
+        pl.col("first_chart_date").str.to_date(),
+        pl.col("title").fill_null(pl.col("norm_title")),
+        pl.col("artist").fill_null(pl.col("norm_artist"))
+    ])
 
     # 2. Market Share Logic
     market_query = """
@@ -140,8 +144,8 @@ st.sidebar.markdown("---")
 st.sidebar.subheader("Song Drill-Down")
 
 # Create a display label for the dropdown
-songs_list = filtered_songs.select(["song_id", "norm_title", "norm_artist"]).to_dicts()
-song_options = {f"{s['norm_title']} - {s['norm_artist']}": s['song_id'] for s in songs_list}
+songs_list = filtered_songs.select(["song_id", "title", "artist", "norm_title", "norm_artist"]).to_dicts()
+song_options = {f"{s['title']} - {s['artist']}": s['song_id'] for s in songs_list}
 
 selected_song_label = st.sidebar.selectbox(
     "Select a Song to Inspect",
@@ -182,8 +186,8 @@ with col_hero:
             y="weeks_top_100",
             color="weeks_top_10",
             size="weeks_top_100",
-            hover_name="norm_title",
-            hover_data=["norm_artist", "peak_rank", "weeks_top_100"],
+            hover_name="title",
+            hover_data=["artist", "peak_rank", "weeks_top_100"],
             color_continuous_scale="Viridis",
             title=f"Song Persistence ({selected_years[0]}-{selected_years[1]})",
         )
@@ -210,8 +214,8 @@ with col_detail:
         # Render Custom Card HTML
         st.markdown(f"""
             <div class="song-card">
-                <div class="song-title">{song_data['norm_title']}</div>
-                <div class="song-artist">{song_data['norm_artist']}</div>
+                <div class="song-title">{song_data['title']}</div>
+                <div class="song-artist">{song_data['artist']}</div>
                 <div class="stat-row">
                     <span>Peak Rank: <strong>#{song_data['peak_rank']}</strong></span>
                     <span>Weeks on Chart: <strong>{song_data['weeks_top_100']}</strong></span>
@@ -258,12 +262,12 @@ with col_detail:
             top_5 = (
                 filtered_songs.sort("weeks_top_10", descending=True)
                 .head(5)
-                .select(["norm_title", "norm_artist", "weeks_top_10"])
+                .select(["title", "artist", "weeks_top_10"])
             )
             for row in top_5.iter_rows(named=True):
                 st.markdown(f"""
-                **{row['norm_title']}**  
-                <span style='color: #8b949e; font-size: 0.9em;'>{row['norm_artist']} • {row['weeks_top_10']} wks in Top 10</span>
+                **{row['title']}**  
+                <span style='color: #8b949e; font-size: 0.9em;'>{row['artist']} • {row['weeks_top_10']} wks in Top 10</span>
                 <hr style='margin: 5px 0; border-color: #30363d;'>
                 """, unsafe_allow_html=True)
 

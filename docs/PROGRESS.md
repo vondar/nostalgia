@@ -14,10 +14,21 @@
 - [x] **Session Blocks**: Implemented 500-song session limits with 1-hour cooldowns in `05_yt_sync.py` to mitigate YouTube rate limiting.
 - [x] **Variant Preservation**: Added `variant_info` to capture "feat." and remix details for better YouTube search accuracy.
 - [x] **Selector Hardening**: Updated `01_scrape.py` with hierarchical selectors to handle DOM variations across 5 years.
+- [x] **Schema Evolution**: Added `title` and `artist` display columns to `songs` table and backfilled data.
+- [x] **Metadata Alignment**: Updated `METADATA.md` and `common.py` to track `sync_status` and granular stats.
 
-### 3. Documentation
+### 3. Visualization & Access
+- [x] **Dashboard**: Built Streamlit app (`dashboard.py`) with:
+    - Bento Box KPI Layout.
+    - Interactive Scatter Plot (Longevity vs Peak Rank).
+    - Song Drill-Down with Sparklines.
+    - Market Share Analysis.
+    - Year Range Filtering (2013-2017).
+
+### 4. Documentation
 - [x] **Progress Tracking**: Maintained real-time status in `PROGRESS.md`.
 - [x] **Changelog**: Documented all architectural decisions and bug fixes.
+- [x] **Data Dictionary**: Finalized `METADATA.md` with strict typing and constraints.
 
 ---
 
