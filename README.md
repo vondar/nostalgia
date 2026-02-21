@@ -93,14 +93,77 @@ A deterministic, resumable, and state-aware ETL pipeline. This system extracts 5
 
 ---
 
-## Usage Workflow
+## Installation
 
-1.  **Ingest**: `python 01_scrape.py` (Updates `chart_entries` & `scrape_log`)
-2.  **Refine**: `python 02_normalize.py` (Updates `songs` registry & `variant_info`)
-3.98.  **Analyze**: `python 03_aggregate.py` (Computes metrics)
-99.  **Visualize**: `streamlit run dashboard.py` (Launch interactive dashboard)
-100. **Verify**: `python 04_yt_verify.py` (Populates `confidence_score`)
-101. **Deploy**: `python 05_yt_sync.py --live --min-confidence 0.90`
+1.  **Clone the repository**:
+    ```bash
+    git clone https://github.com/yourusername/nostalgia.git
+    cd nostalgia
+    ```
+
+2.  **Install dependencies**:
+    ```bash
+    pip install -r requirements.txt
+    ```
+
+3.  **Configure YouTube Music Auth** (Required for Deployment):
+    To sync playlists, you need to authenticate with YouTube Music.
+    ```bash
+    ytmusicapi headers
+    ```
+    Follow the prompts to paste your browser headers. This will generate a `headers_auth.json` file.
+    *See [ytmusicapi docs](https://ytmusicapi.readthedocs.io/en/latest/setup/browser.html) for detailed instructions.*
+
+---
+
+## Usage Guide
+
+### 1. Ingest (Scrape)
+Download the Billboard Hot 100 history.
+```bash
+python 01_scrape.py
+```
+*   **Resumable**: Safe to interrupt and restart.
+*   **Output**: Populates `chart_entries` and `scrape_log`.
+
+### 2. Refine (Normalize)
+Clean and standardize artist names and titles.
+```bash
+python 02_normalize.py
+```
+*   **Logic**: extracting "feat." credits, normalizing case, and generating the canonical `song_id`.
+
+### 3. Analyze (Aggregate)
+Compute longevity metrics and peak ranks.
+```bash
+python 03_aggregate.py
+```
+*   **Output**: Updates `songs` table with `peak_rank`, `weeks_top_10`, etc.
+
+### 4. Visualize (Dashboard)
+Explore the dataset interactively.
+```bash
+streamlit run dashboard.py
+```
+*   **Features**: Market share analysis, song longevity scatter plots, and drill-down views.
+
+### 5. Verify (Match)
+Find the best YouTube video match for each song.
+```bash
+python 04_yt_verify.py
+```
+*   **Process**: Performs searches, checks durations, and assigns a `confidence_score` (0.0 - 1.0).
+
+### 6. Deploy (Sync)
+Create the playlist on your YouTube Music account.
+```bash
+# Dry run (safe to run, just prints actions)
+python 05_yt_sync.py --min-confidence 0.90
+
+# Live sync (actually creates/updates playlist)
+python 05_yt_sync.py --live --min-confidence 0.90
+```
+*   **Safety**: Enforces a session limit (default 500 songs) to prevent rate-limiting.
 
 ---
 
