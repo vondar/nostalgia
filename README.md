@@ -153,6 +153,7 @@ Find the best YouTube video match for each song.
 python 04_yt_verify.py
 ```
 *   **Process**: Performs searches, checks durations, and assigns a `confidence_score` (0.0 - 1.0).
+*   **Limit**: Defaults to 10 songs for testing. Use `--limit 3000` to process the full dataset.
 
 ### 6. Deploy (Sync)
 Create the playlist on your YouTube Music account.

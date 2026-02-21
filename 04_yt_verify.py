@@ -123,20 +123,32 @@ def verify_songs(dry_run=True, limit=10):
         yt = YTMusic() # Attempt anonymous
 
     # Select unsynced songs
-    cursor.execute("SELECT song_id, norm_title, norm_artist, variant_info FROM songs WHERE sync_status = 'unsynced' LIMIT ?", (limit,))
+    # Check total unsynced first for progress reporting
+    cursor.execute("SELECT COUNT(*) FROM songs WHERE sync_status = 'unsynced'")
+    total_unsynced = cursor.fetchone()[0]
+
+    query = "SELECT song_id, norm_title, norm_artist, variant_info FROM songs WHERE sync_status = 'unsynced'"
+    params = []
+    
+    if limit > 0:
+        query += " LIMIT ?"
+        params.append(limit)
+        print(f"Verifying {limit} of {total_unsynced} unsynced songs (Limit applied)...")
+    else:
+        print(f"Verifying ALL {total_unsynced} unsynced songs...")
+
+    cursor.execute(query, tuple(params))
     songs = cursor.fetchall()
     
     results = []
     
-    print(f"Verifying {len(songs)} songs...")
-    
-    for song in songs:
+    for i, song in enumerate(songs):
         variant = song['variant_info'] if song['variant_info'] else ""
-        query = f"{song['norm_title']} {variant} {song['norm_artist']}".strip()
-        print(f"Searching: {query}")
+        query_str = f"{song['norm_title']} {variant} {song['norm_artist']}".strip()
+        print(f"[{i+1}/{len(songs)}] Searching: {query_str}")
         
         try:
-            search_results = yt.search(query, filter="songs", limit=3)
+            search_results = yt.search(query_str, filter="songs", limit=3)
             
             best_match = None
             best_score = -1.0
@@ -176,7 +188,7 @@ def verify_songs(dry_run=True, limit=10):
             time.sleep(random.uniform(0.5, 1.5)) # Rate limit niceness
             
         except Exception as e:
-            print(f"Error searching {query}: {e}")
+            print(f"Error searching {query_str}: {e}")
 
     if dry_run:
         csv_file = "verification_dry_run.csv"
