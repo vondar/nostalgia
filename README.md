@@ -108,11 +108,21 @@ A deterministic, resumable, and state-aware ETL pipeline. This system extracts 5
 
 3.  **Configure YouTube Music Auth** (Required for Deployment):
     To sync playlists, you need to authenticate with YouTube Music.
-    ```bash
-    ytmusicapi headers
-    ```
-    Follow the prompts to paste your browser headers. This will generate a `headers_auth.json` file.
-    *See [ytmusicapi docs](https://ytmusicapi.readthedocs.io/en/latest/setup/browser.html) for detailed instructions.*
+    
+    **Option A: OAuth (Highly Recommended)**
+    This is the most stable method for long-running sync jobs.
+    1. Run the setup wizard:
+       ```bash
+       uv run ytmusicapi oauth
+       ```
+    2. Follow the URL, authenticate with your Google account, and paste the code back into the terminal.
+    3. This will generate `oauth.json`. The sync script will automatically prioritize this file.
+
+    **Option B: Browser Headers (Legacy/Advanced)**
+    *Note: prone to "OAuth detected" errors and session expiry.*
+    1. Run `uv run ytmusicapi browser`
+    2. Paste your request headers from Chrome/Firefox Developer Tools (Network tab -> `browse` request -> Copy as cURL/Fetch).
+    3. Rename the output to `headers_auth.json`.
 
 ---
 

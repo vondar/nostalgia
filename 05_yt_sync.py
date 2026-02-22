@@ -2,6 +2,9 @@ import common
 import argparse
 from ytmusicapi import YTMusic
 import time
+import random
+import os
+import json
 
 def sync_to_youtube(min_confidence=0.90, limit=50, playlist_id=None, live=False, session_limit=500, session_cooldown=3600):
     conn = common.get_db_connection()
@@ -9,12 +12,50 @@ def sync_to_youtube(min_confidence=0.90, limit=50, playlist_id=None, live=False,
     
     # Check for authentication
     try:
-        # Expecting headers_auth.json or oauth.json in current directory
-        yt = YTMusic("headers_auth.json") 
+        # Priority 1: OAuth (Recommended by user/docs for stability)
+        if os.path.exists("oauth.json"):
+            print("Authenticating with OAuth (oauth.json)...")
+            yt = YTMusic("oauth.json")
+            
+        # Priority 2: Browser Auth (Legacy/Flaky)
+        elif os.path.exists("headers_auth.json"):
+            print("Authenticating with Browser Headers (headers_auth.json)...")
+            
+            # Attempt robust loading (Fix #1 & #2)
+            import json
+            with open("headers_auth.json", 'r') as f:
+                auth_data = json.load(f)
+                
+            # Fix casing for Cookie
+            if "Cookie" not in auth_data and "cookie" in auth_data:
+                auth_data["Cookie"] = auth_data.pop("cookie")
+                    
+            # Remove poison pills
+            keys_to_remove = [k for k in auth_data.keys() if k.lower() in ['authorization', 'oauth', 'oauth_token']]
+            for k in keys_to_remove:
+                del auth_data[k]
+                
+            # SUPER AGGRESSIVE CLEANUP: Only keep essential headers
+            allowed_keys = ["User-Agent", "Cookie", "Accept", "Accept-Language", "x-goog-authuser", "x-origin"]
+            auth_data = {k: v for k, v in auth_data.items() if k in allowed_keys}
+            
+            yt = YTMusic(auth=auth_data)
+            
+        else:
+            raise FileNotFoundError("No 'oauth.json' or 'headers_auth.json' found.")
+
     except Exception as e:
-        print("Error: Could not authenticate with YTMusic. Please ensure 'headers_auth.json' exists.")
-        print("Run `ytmusicapi headers` to generate it.")
-        print(f"Details: {e}")
+        print("\n" + "="*60)
+        print("AUTHENTICATION FAILURE")
+        print("="*60)
+        print(f"Error: {e}")
+        print("-" * 60)
+        print("RECOMMENDED FIX: Switch to OAuth (Stable & Long-term)")
+        print("1. Run `uv run ytmusicapi oauth` in your terminal.")
+        print("2. Follow the URL, authenticate, and paste the code.")
+        print("3. This will generate 'oauth.json'.")
+        print("4. Re-run this script.")
+        print("="*60 + "\n")
         return
 
     # Create playlist if not provided
@@ -98,29 +139,20 @@ def sync_to_youtube(min_confidence=0.90, limit=50, playlist_id=None, live=False,
                     return # Exit on error
         else:
             print(f"Dry run: Would add {len(video_ids)} songs to playlist {playlist_id}.")
-            total_synced_session += len(video_ids)
-            
-        # If we fetched fewer than requested, we are done
-        if len(candidates) < fetch_limit:
-            print("Processed all available candidates.")
             break
 
 if __name__ == "__main__":
-    parser = argparse.ArgumentParser()
-    parser.add_argument("--live", action="store_true", help="Actually perform the sync")
+    parser = argparse.ArgumentParser(description="Sync songs to YouTube Music playlist.")
     parser.add_argument("--min-confidence", type=float, default=0.90, help="Minimum confidence score to sync")
-    parser.add_argument("--limit", type=int, default=50, help="Max songs to fetch per db query loop")
-    parser.add_argument("--playlist-id", type=str, help="Existing playlist ID to append to")
-    parser.add_argument("--session-limit", type=int, default=500, help="Max songs to sync before cooldown")
-    parser.add_argument("--cooldown", type=int, default=3600, help="Seconds to wait after session limit")
+    parser.add_argument("--limit", type=int, default=50, help="Number of songs to sync per run")
+    parser.add_argument("--playlist-id", type=str, help="Existing playlist ID (optional)")
+    parser.add_argument("--live", action="store_true", help="Actually create/update playlist")
     
     args = parser.parse_args()
     
     sync_to_youtube(
         min_confidence=args.min_confidence, 
         limit=args.limit, 
-        playlist_id=args.playlist_id, 
-        live=args.live,
-        session_limit=args.session_limit,
-        session_cooldown=args.cooldown
+        playlist_id=args.playlist_id,
+        live=args.live
     )

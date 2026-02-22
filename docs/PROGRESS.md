@@ -45,6 +45,10 @@
 ---
 
 ## 🔴 Known Issues / Blockers
-- **None currently.**
+- **YTMusic Authentication Bug**: `ytmusicapi` consistently fails with `oauth JSON provided via auth argument, but oauth_credentials not provided` even when using valid browser headers (cookies).
+    - **Context**: Occurs in `05_yt_sync.py` when initializing `YTMusic("headers_auth.json")`. The file contains valid `Cookie`, `x-goog-authuser`, etc., but the library seems to misidentify it as OAuth credentials.
+    - **Attempted Fixes**: Stripping `Authorization` keys, removing non-essential headers, renaming files, passing dict vs string, using `setup()` to regenerate. None worked.
+    - **Status**: **Won't Fix**. The browser auth method is too unreliable on this environment.
+    - **Resolution**: Switched strategy to **OAuth**. Updated `05_yt_sync.py` to prioritize `oauth.json`. User must run `uv run ytmusicapi oauth` to generate credentials.
 - *Resolved*: `UNIQUE` constraint error on 2013-12-09 (Fixed via deduplication logic).
 - *Resolved*: `unidecode` import error (Fixed via `uv run`).
